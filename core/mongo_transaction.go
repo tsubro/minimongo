@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"minimongo/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,7 +24,7 @@ func (m MongoTx) Save(o interface{}, collectionName string) error {
 		return err
 	}
 
-	for _,v := range md {
+	for _, v := range md {
 		log.Info(v)
 		m.insert(v.SData, v.CollectionName)
 	}
@@ -32,6 +33,12 @@ func (m MongoTx) Save(o interface{}, collectionName string) error {
 
 func (m MongoTx) Get(o interface{}, collectionName string, searchKeys ...interface{}) {
 
+	r, err := m.get(collectionName, searchKeys)
+	if err != nil {
+		log.Info("Error While Fetching Data ", err)
+	}
+
+	
 }
 
 func (m MongoTx) Commit() {
@@ -72,19 +79,34 @@ func (m MongoTx) insert(o interface{}, collectionName string) {
 	log.Info("Inserted a single document: ", insertResult.InsertedID)
 }
 
-func (m MongoTx) get(collectionName string, searchKeys ...interface{}) (map[string]interface{}, error) {
+func (m MongoTx) get(collectionName string, searchKeys ...interface{}) ([]*map[string]interface{}, error) {
 	collection := m.getMongoConnection().Database(m.DatabaseName).Collection(collectionName)
 
-	var o map[string]interface{}
+	var query bson.D
+	for k, v := range searchKeys {
+		query = append(query, bson.E{fmt.Sprintf("%v", k), v})
+	}
 
-	err := collection.FindOne(context.TODO(), bson.D{{"jobid", jobId}}).Decode(&o)
+	cur, err := collection.Find(context.TODO(), query)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
+	var results []*map[string]interface{}
+	for cur.Next(context.TODO()) {
+    
+		// create a value into which the single document can be decoded
+		var elem map[string]interface{}
+		err := cur.Decode(&elem)
+		if err != nil {
+			log.Fatal(err)
+		}
+	
+		results = append(results, &elem)
+	}
 
-	log.Info("Fetched a single document succefully")
-	return o, nil
+	log.Info("Fetched document succefully")
+	return results, nil
 }
 
 // func update(job *models.RenderJob) {

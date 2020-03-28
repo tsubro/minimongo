@@ -29,4 +29,8 @@ func main() {
 	// test.Ref(&e)
 	m := core.MongoTx{"mongodb://localhost:27017", "odm-test"}
 	m.Save(&e, "odm-job")
+
+	emp := Employee{}
+
+	m.Get(&emp, "odj-job", nil)
 }

@@ -118,3 +118,35 @@ func convertMapToStruct(d map[string]interface{}) interface{} {
 	json.Unmarshal(b, &a)
 	return a
 }
+
+func UnparseToStruct(o interface{}, results []*map[string]interface{}) []*interface{}{
+
+	var r []*interface{}
+
+	var tagMap map[string]string
+	s := reflect.ValueOf(o).Elem()
+	for i := 0; i < s.NumField(); i++ {
+
+		tf := s.Type().Field(i)
+		n := tf.Name
+
+		if tf.Tag != "" {
+			nTag := tf.Tag.Get(fieldNameTag)
+			
+			if nTag != "" {
+				n = nTag
+			}
+		}
+
+		tagMap[n] = tf.Name 
+	}
+
+	for k,v := range results {
+
+		output := o
+
+		
+		
+
+	}
+}
