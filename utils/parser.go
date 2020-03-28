@@ -8,13 +8,12 @@ import (
 )
 
 type MetaData struct {
-
 	CollectionName string
 	data           map[string]interface{}
 	SData          interface{}
 }
 
-func Parse(o interface{}, collectionName string, name string, val interface{}) ([]MetaData , error){
+func Parse(o interface{}, collectionName string, name string, val interface{}) ([]MetaData, error) {
 
 	var res []MetaData
 	m := MetaData{}
@@ -44,7 +43,7 @@ func Parse(o interface{}, collectionName string, name string, val interface{}) (
 		cTag := v[collectionNameTag]
 		rTag := v[referenceKeyTag]
 
-		if (iTag != "") {
+		if iTag != "" {
 			continue
 		}
 
@@ -119,9 +118,9 @@ func convertMapToStruct(d map[string]interface{}) interface{} {
 	return a
 }
 
-func UnparseToStruct(o interface{}, results []*map[string]interface{}) []*interface{}{
+func Unparse(o interface{}, results []map[string]interface{}) []interface{} {
 
-	var r []*interface{}
+	var r []interface{}
 
 	var tagMap map[string]string
 	s := reflect.ValueOf(o).Elem()
@@ -132,21 +131,30 @@ func UnparseToStruct(o interface{}, results []*map[string]interface{}) []*interf
 
 		if tf.Tag != "" {
 			nTag := tf.Tag.Get(fieldNameTag)
-			
+
 			if nTag != "" {
 				n = nTag
 			}
 		}
 
-		tagMap[n] = tf.Name 
+		tagMap[n] = tf.Name
 	}
 
-	for k,v := range results {
+	for _, result := range results {
+		ele := o
+		rEle := reflect.ValueOf(ele).Elem()
 
-		output := o
+		for k, v := range result {
 
-		
-		
+			f := rEle.FieldByName(tagMap[k])
 
+			if f.Kind() == reflect.Int {
+				f.SetInt(v.(int64))
+			} else if f.Kind() == reflect.String {
+				f.SetString(v.(string))
+			}
+		}
+		r = append(r, ele)
 	}
+	return r
 }

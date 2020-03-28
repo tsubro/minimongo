@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"minimongo/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,22 +30,15 @@ func (m MongoTx) Save(o interface{}, collectionName string) error {
 	return nil
 }
 
-func (m MongoTx) Get(o interface{}, collectionName string, searchKeys ...interface{}) {
+func (m MongoTx) Get(o interface{}, collectionName string, query bson.D) []interface{} {
 
-	r, err := m.get(collectionName, searchKeys)
+	r, err := m.get(collectionName, query)
 	if err != nil {
 		log.Info("Error While Fetching Data ", err)
 	}
 
-	
-}
-
-func (m MongoTx) Commit() {
-
-}
-
-func (m MongoTx) Rollback() {
-
+	res := utils.Unparse(o, r)
+	return res
 }
 
 func (m MongoTx) getMongoConnection() *mongo.Client {
@@ -79,13 +71,8 @@ func (m MongoTx) insert(o interface{}, collectionName string) {
 	log.Info("Inserted a single document: ", insertResult.InsertedID)
 }
 
-func (m MongoTx) get(collectionName string, searchKeys ...interface{}) ([]*map[string]interface{}, error) {
+func (m MongoTx) get(collectionName string, query bson.D) ([]*map[string]interface{}, error) {
 	collection := m.getMongoConnection().Database(m.DatabaseName).Collection(collectionName)
-
-	var query bson.D
-	for k, v := range searchKeys {
-		query = append(query, bson.E{fmt.Sprintf("%v", k), v})
-	}
 
 	cur, err := collection.Find(context.TODO(), query)
 	if err != nil {
@@ -94,14 +81,14 @@ func (m MongoTx) get(collectionName string, searchKeys ...interface{}) ([]*map[s
 	}
 	var results []*map[string]interface{}
 	for cur.Next(context.TODO()) {
-    
+
 		// create a value into which the single document can be decoded
 		var elem map[string]interface{}
 		err := cur.Decode(&elem)
 		if err != nil {
 			log.Fatal(err)
 		}
-	
+
 		results = append(results, &elem)
 	}
 
